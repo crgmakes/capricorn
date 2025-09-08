@@ -115,6 +115,16 @@ class _BomTableWidgetState extends State<BomTableWidget> {
                     _sort<num>((d) => d.quantity, columnIndex, ascending),
               ),
               DataColumn2(
+                label: Text("Cost/Each"),
+                onSort: (columnIndex, ascending) =>
+                    _sort<num>((d) => d.cost, columnIndex, ascending),
+              ),
+              DataColumn2(
+                label: Text("Ext Cost"),
+                onSort: (columnIndex, ascending) =>
+                    _sort<num>((d) => d.extcost, columnIndex, ascending),
+              ),
+              DataColumn2(
                 label: Text("Designator"),
                 onSort: (columnIndex, ascending) =>
                     _sort<String>((d) => d.designator, columnIndex, ascending),

@@ -6,5 +6,6 @@ class BomItem {
   int quantity = 0;
   double unitCost = 0.0;
   double cost = 0.0;
+  double extcost = 0.0;
   bool selected = false;
 }

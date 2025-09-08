@@ -1,27 +1,17 @@
-import 'dart:collection';
-import 'dart:io';
-
 import 'package:capricorn/src/log/app_logger.dart';
 import 'package:capricorn/src/models/bom_item.dart';
-import 'package:csv/csv_settings_autodetection.dart';
-import 'package:file_picker/file_picker.dart';
 import 'dart:convert';
-import 'package:csv/csv.dart';
 import 'package:http/http.dart' as http;
 
 class JlcController {
   final logger = AppLogger.getLogger();
-
-  bool parsedHeader = false;
-  bool foundLcsc = false;
-  bool processedBom = false;
-
-  int commentCol = -1;
-  int designatorCol = -1;
-  int footprintCol = -1;
-  int lcscCol = -1;
-
-  List<BomItem> bom = [];
+  int uniquePartCount = 0;
+  int totalPartCount = 0;
+  double totalCost = 0.0;
+  late BomItem highPrice;
+  late BomItem highQuantity;
+  late BomItem lowPrice;
+  late BomItem lowQuantity;
 
   final String baseUrl =
       'https://cart.jlcpcb.com/shoppingCart/smtGood/getComponentDetail?componentCode=';
@@ -32,130 +22,70 @@ class JlcController {
     return controller;
   }
 
-  Future<bool> parseCsv(PlatformFile file) async {
-    try {
-      bom.clear();
+  Future<bool> getPrices(List<BomItem> bom) async {
+    bool b = false;
+    int processed = 0;
 
-      String filePath = file.path!;
-      const FirstOccurrenceSettingsDetector det =
-          FirstOccurrenceSettingsDetector(eols: ['\r\n', '\n']);
+    for (int i = 0; i < bom.length; i++) {
+      BomItem bi = bom[i];
+      if (i == 0) {
+        highPrice = bi;
+        lowPrice = bi;
+        highQuantity = bi;
+        lowQuantity = bi;
+      }
+      if (bi.lcsc.isNotEmpty) {
+        try {
+          final url = Uri.parse(baseUrl + bi.lcsc);
+          final response = await http.get(url);
 
-      final input = File(filePath).openRead();
-      final fields = await input
-          .transform(utf8.decoder)
-          .transform(const CsvToListConverter(csvSettingsDetector: det))
-          .toList();
+          if (response.statusCode == 200) {
+            //logger.t("Response body: ${response.body}");
+            final decodedData = jsonDecode(response.body);
+            //logger.t('Decoded data: $decodedData');
 
-      logger.t("processed fields.length: ${fields.length}");
-      logger.t("processed first.length: ${fields.first.length}");
-
-      if (fields.isNotEmpty) {
-        logger.d("we have ${fields.length} rows");
-
-        if (parseHeader(fields.first) == false) {
-          logger.e("Failed to parse header");
-          return processedBom;
-        } else {
-          parsedHeader = true;
-        }
-
-        int rowc = fields.length;
-
-        // start at 1 since first row is comment
-        for (int i = 1; i < rowc; i++) {
-          BomItem j = parseRow(fields[i]);
-          if (j.quantity > 0) {
-            bom.add(j);
+            dynamic data = decodedData["data"];
+            List<dynamic> prices = data["prices"];
+            logger.d("prices for ${bi.lcsc} length=${prices.length}");
+            for (int j = 0; j < prices.length; j++) {
+              if (prices[j]["startNumber"] == 1) {
+                uniquePartCount++;
+                bi.cost = prices[j]["productPrice"];
+                bi.extcost = bi.cost * bi.quantity;
+                totalCost += bi.extcost;
+                totalPartCount += bi.quantity;
+                if (bi.cost > highPrice.cost) {
+                  highPrice = bi;
+                }
+                if (bi.cost < lowPrice.cost) {
+                  lowPrice = bi;
+                }
+                if (bi.quantity > highQuantity.quantity) {
+                  highQuantity = bi;
+                }
+                if (bi.quantity < lowQuantity.quantity) {
+                  lowQuantity = bi;
+                }
+                logger.i("jlc price for ${bi.lcsc} = ${bi.cost}");
+                processed++;
+                break;
+              }
+            }
           } else {
-            logger.w("skipping row '${j.comment}'");
+            // Request failed with an error status code
+            logger.e(
+                'Request for ${bi.lcsc} failed with status: ${response.statusCode}.');
+            break;
           }
-        } // end for
-        logger.d("bom size=${bom.length}");
-        processedBom = true;
-      } else {
-        logger.e("file appears to be blank - field length is zero");
-      }
-    } on Exception catch (e) {
-      logger.f("error parsing: $e");
-    }
-
-    return processedBom;
-  }
-
-  bool parseHeader(List<dynamic> row) {
-    int l = row.length;
-
-    for (int i = 0; i < l; i++) {
-      logger.d("c[$i]=${row[i]}");
-
-      if (row[i].toString().toLowerCase() == "comment") {
-        commentCol = i;
-      } else if (row[i].toString().toLowerCase() == "footprint") {
-        footprintCol = i;
-      } else if (row[i].toString().toLowerCase() == "designator") {
-        designatorCol = i;
-      } else if (row[i].toString().toLowerCase() == "lcsc") {
-        lcscCol = i;
-        foundLcsc = true;
-      }
-    } // end for
-
-    // return true if we found all the elements
-    if ((commentCol == -1 ||
-        footprintCol == -1 ||
-        designatorCol == -1 ||
-        lcscCol == -1)) {
-      return false;
-    } else {
-      return true;
-    }
-  }
-
-  BomItem parseRow(List<dynamic> list) {
-    BomItem j = BomItem();
-
-    if (list.isEmpty) {
-      logger.e("list is empty");
-    } else {
-      j.comment = list[commentCol].toString();
-      j.footprint = list[footprintCol].toString();
-      j.designator = list[designatorCol].toString();
-      j.lcsc = list[lcscCol].toString();
-      j.quantity = 1;
-
-      for (int i = 0; i < j.designator.length; i++) {
-        if (j.designator[i] == ",") {
-          j.quantity++;
+        } catch (e) {
+          // Handle network errors or other exceptions
+          logger.f('Error during HTTP request: $e');
         }
-      }
-
-      // String u =
-      //     'https://cart.jlcpcb.com/shoppingCart/smtGood/getComponentDetail?componentCode=${b.lcsc}';
-      // await getUrlResponse(u);
+      } // end if
+    } // end for
+    if (processed == bom.length) {
+      b = true;
     }
-
-    return j;
-  } // end fromList
-
-  Future<void> getUrlResponse(String u) async {
-    final url = Uri.parse(u);
-    try {
-      final response = await http.get(url);
-
-      if (response.statusCode == 200) {
-        logger.i("Response status: ${response.statusCode}");
-        logger.i("Response body: ${response.body}");
-
-        // If the response is JSON, you can decode it
-        final decodedData = jsonDecode(response.body);
-        logger.i('Decoded data: $decodedData');
-      } else {
-        // Request failed with an error status code
-        logger.e('Request failed with status: ${response.statusCode}.');
-      }
-    } catch (e) {
-      // Handle network errors or other exceptions
-      logger.f('Error during HTTP request: $e');
-    }
+    return b;
   }
 } // end class

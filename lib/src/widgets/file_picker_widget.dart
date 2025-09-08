@@ -1,9 +1,11 @@
 // ignore_for_file: deprecated_member_use, deprecated_member_use_from_same_package
 
 import 'package:capricorn/src/constants/app_styles.dart';
+import 'package:capricorn/src/controllers/csv_controller.dart';
 import 'package:capricorn/src/controllers/jlc_controller.dart';
 import 'package:capricorn/src/log/app_logger.dart';
 import 'package:capricorn/src/models/bom_item.dart';
+import 'package:capricorn/src/widgets/bom_cost_widget.dart';
 import 'package:capricorn/src/widgets/bom_table_widget.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
@@ -25,9 +27,9 @@ class _FilePickerWidgetState extends State<FilePickerWidget> {
   PlatformFile? chosenFile;
   String? lastDirectory;
   String errorMessage = "";
-  // List<List<dynamic>> _data = [];
   List<BomItem> bom = [];
   Widget dataTable = Container();
+  bool processing = false;
 
   @override
   void initState() {
@@ -87,24 +89,34 @@ class _FilePickerWidgetState extends State<FilePickerWidget> {
       return;
     }
 
-    JlcController controller = JlcController.instance();
+    CsvController csvController = CsvController.instance();
+    JlcController jlcController = JlcController.instance();
 
-    bool b = await controller.parseCsv(chosenFile!);
+    setState(() {
+      bom.clear();
+      processing = true;
+    });
+    bool b = await csvController.parseCsv(chosenFile!);
     if (b) {
+      b = await jlcController.getPrices(csvController.bom);
+      if (!b) {
+        errorMessage = "Error getting prices.";
+      } else {
+        setState(() {
+          processing = false;
+          bom.addAll(csvController.bom);
+          dataTable = BomTableWidget(bom: bom);
+        });
+      }
     } else {
-      if (controller.parsedHeader == false) {
+      if (csvController.parsedHeader == false) {
         errorMessage = "Unable to parse header!";
-      } else if (controller.foundLcsc == false) {
+      } else if (csvController.foundLcsc == false) {
         errorMessage = "Unable to find LCSC column in BOM!";
       } else {
         errorMessage = "Unable to parse file!";
       }
     }
-    setState(() {
-      bom.clear();
-      bom.addAll(controller.bom);
-      dataTable = BomTableWidget(bom: bom);
-    });
 
     logger.t("END");
   }
@@ -235,8 +247,16 @@ class _FilePickerWidgetState extends State<FilePickerWidget> {
           ),
         ),
         Visibility(
+          visible: processing,
+          child: CircularProgressIndicator(),
+        ),
+        Visibility(
           visible: bom.isNotEmpty,
           child: dataTable,
+        ),
+        Visibility(
+          visible: bom.isNotEmpty,
+          child: BomCostWidget(bom: bom),
         ),
       ],
     );
