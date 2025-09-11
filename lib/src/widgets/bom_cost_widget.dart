@@ -32,25 +32,85 @@ class _BomCostWidgetState extends State<BomCostWidget> {
   Widget build(BuildContext context) {
     JlcController jlcController = JlcController.instance();
 
-    return Card(
-      shape: AppStyles.styleBoarderCard,
-      margin: const EdgeInsets.fromLTRB(20, 0, 0, 20),
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: SizedBox(
-            child: Column(
-          mainAxisAlignment: MainAxisAlignment.start,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text("Unique Part Count: ${jlcController.uniquePartCount}"),
-            Text("Total Part Count: ${jlcController.totalPartCount}"),
-            Text(
-                "Highest Cost Part: ${jlcController.highPrice.lcsc} @ ${jlcController.highPrice.cost}"),
-            Text(
-                "Lowest Cost Part: ${jlcController.lowPrice.lcsc} @ ${jlcController.lowPrice.cost}"),
-            Text("Total Cost: \$${jlcController.totalCost.toStringAsFixed(2)}"),
-          ],
-        )),
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(50, 10, 50, 20),
+      child: Table(
+        border: TableBorder.all(),
+        // columnWidths: const <int, TableColumnWidth>{
+        //   0: IntrinsicColumnWidth(),
+        //   1: FlexColumnWidth(),
+        //   2: FixedColumnWidth(64),
+        // },
+        defaultVerticalAlignment: TableCellVerticalAlignment.middle,
+        columnWidths: const <int, TableColumnWidth>{
+          0: FractionColumnWidth(.25),
+          1: FractionColumnWidth(.75),
+        },
+
+        children: <TableRow>[
+          TableRow(
+            children: <Widget>[
+              Padding(
+                padding: const EdgeInsets.fromLTRB(5, 2, 5, 2),
+                child: Text("Unique Part Count:"),
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(5, 2, 5, 2),
+                child: Text(jlcController.uniquePartCount.toString()),
+              ),
+            ],
+          ),
+          TableRow(
+            children: <Widget>[
+              Padding(
+                padding: const EdgeInsets.fromLTRB(5, 2, 5, 2),
+                child: Text("Total Part Count:"),
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(5, 2, 5, 2),
+                child: Text(jlcController.totalPartCount.toString()),
+              ),
+            ],
+          ),
+          TableRow(
+            children: <Widget>[
+              Padding(
+                padding: const EdgeInsets.fromLTRB(5, 2, 5, 2),
+                child: Text("Highest Cost Part: "),
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(5, 2, 5, 2),
+                child: Text(
+                    "${jlcController.highPrice.lcsc} @ ${jlcController.highPrice.cost}"),
+              ),
+            ],
+          ),
+          TableRow(
+            children: <Widget>[
+              Padding(
+                padding: const EdgeInsets.fromLTRB(5, 2, 5, 2),
+                child: Text("Lowest Cost Part:"),
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(5, 2, 5, 2),
+                child: Text(
+                    "${jlcController.lowPrice.lcsc} @ ${jlcController.lowPrice.cost}"),
+              ),
+            ],
+          ),
+          TableRow(
+            children: <Widget>[
+              Padding(
+                padding: const EdgeInsets.fromLTRB(5, 2, 5, 2),
+                child: Text("Total Cost:"),
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(5, 2, 5, 2),
+                child: Text(jlcController.totalCost.toStringAsFixed(2)),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }

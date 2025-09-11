@@ -100,7 +100,7 @@ class _BomTableWidgetState extends State<BomTableWidget> {
             sortArrowIconColor: Colors.white,
             columns: [
               DataColumn2(
-                label: Text("Comment"),
+                label: Text("Description"),
                 onSort: (columnIndex, ascending) =>
                     _sort<String>((d) => d.comment, columnIndex, ascending),
               ),
@@ -129,11 +129,11 @@ class _BomTableWidgetState extends State<BomTableWidget> {
                 onSort: (columnIndex, ascending) =>
                     _sort<String>((d) => d.designator, columnIndex, ascending),
               ),
-              DataColumn2(
-                label: Text("Footprint"),
-                onSort: (columnIndex, ascending) =>
-                    _sort<String>((d) => d.footprint, columnIndex, ascending),
-              ),
+              // DataColumn2(
+              //   label: Text("Footprint"),
+              //   onSort: (columnIndex, ascending) =>
+              //       _sort<String>((d) => d.footprint, columnIndex, ascending),
+              // ),
             ],
             rows: List<DataRow>.generate(
               bomData.rowCount,

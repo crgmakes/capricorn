@@ -87,10 +87,10 @@ class BomDataSource extends DataTableSource {
         DataCell(Text(item.comment)),
         DataCell(Text(item.lcsc)),
         DataCell(Text(item.quantity.toString())),
-        DataCell(Text(item.cost.toString())),
-        DataCell(Text(item.extcost.toString())),
+        DataCell(Text(item.cost.toStringAsFixed(4))),
+        DataCell(Text(item.extcost.toStringAsFixed(4))),
         DataCell(Text(item.designator)),
-        DataCell(Text(item.footprint)),
+        // DataCell(Text(item.footprint)),
       ],
     );
   }

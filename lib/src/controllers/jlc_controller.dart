@@ -1,5 +1,7 @@
 import 'package:capricorn/src/log/app_logger.dart';
 import 'package:capricorn/src/models/bom_item.dart';
+import 'package:capricorn/src/models/jlc_part_details/jlc_part_details.dart';
+import 'package:capricorn/src/models/jlc_part_details/price.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 
@@ -40,17 +42,21 @@ class JlcController {
           final response = await http.get(url);
 
           if (response.statusCode == 200) {
-            //logger.t("Response body: ${response.body}");
-            final decodedData = jsonDecode(response.body);
-            //logger.t('Decoded data: $decodedData');
+            JlcPartDetails details =
+                JlcPartDetails.fromJson(utf8.decode(response.bodyBytes));
+            bi.details = details;
 
-            dynamic data = decodedData["data"];
-            List<dynamic> prices = data["prices"];
-            logger.d("prices for ${bi.lcsc} length=${prices.length}");
+            //logger.t("Response body: ${response.body}");
+            // final decodedData = jsonDecode(response.body);
+            //logger.t('Decoded data: $decodedData');
+            // dynamic data = decodedData["data"];
+            // List<dynamic> prices = data["prices"];
+            List<Price> prices = details.data!.prices!;
             for (int j = 0; j < prices.length; j++) {
-              if (prices[j]["startNumber"] == 1) {
+              if (prices[j].startNumber == 1) {
+                logger.d("description: ${details.data.describe}");
                 uniquePartCount++;
-                bi.cost = prices[j]["productPrice"];
+                bi.cost = prices[j].productPrice!;
                 bi.extcost = bi.cost * bi.quantity;
                 totalCost += bi.extcost;
                 totalPartCount += bi.quantity;
@@ -77,9 +83,10 @@ class JlcController {
                 'Request for ${bi.lcsc} failed with status: ${response.statusCode}.');
             break;
           }
-        } catch (e) {
+        } catch (e, s) {
           // Handle network errors or other exceptions
           logger.f('Error during HTTP request: $e');
+          logger.f(s);
         }
       } // end if
     } // end for

@@ -1,3 +1,5 @@
+import 'package:capricorn/src/models/jlc_part_details/jlc_part_details.dart';
+
 class BomItem {
   String comment = '';
   String designator = '';
@@ -8,4 +10,5 @@ class BomItem {
   double cost = 0.0;
   double extcost = 0.0;
   bool selected = false;
+  JlcPartDetails? details;
 }
