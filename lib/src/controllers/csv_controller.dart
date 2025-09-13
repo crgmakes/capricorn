@@ -27,6 +27,18 @@ class CsvController {
     return controller;
   }
 
+  void reset() {
+    bom.clear();
+    parsedHeader = false;
+    foundLcsc = false;
+    processedBom = false;
+
+    commentCol = -1;
+    designatorCol = -1;
+    footprintCol = -1;
+    lcscCol = -1;
+  }
+
   Future<bool> parseCsv(PlatformFile file) async {
     try {
       bom.clear();

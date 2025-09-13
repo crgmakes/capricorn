@@ -24,11 +24,18 @@ class JlcController {
     return controller;
   }
 
-  Future<bool> getPrices(List<BomItem> bom) async {
+  Future<bool> getPrices(List<BomItem> bom, Function(double d) cb) async {
     bool b = false;
     int processed = 0;
+    uniquePartCount = 0;
+    totalPartCount = 0;
+    totalCost = 0.0;
+    double d = 0.0;
 
     for (int i = 0; i < bom.length; i++) {
+      d = i / bom.length;
+      cb(d);
+
       BomItem bi = bom[i];
       if (i == 0) {
         highPrice = bi;
