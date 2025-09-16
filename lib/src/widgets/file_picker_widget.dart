@@ -4,7 +4,6 @@ import 'package:capricorn/src/constants/app_styles.dart';
 import 'package:capricorn/src/controllers/csv_controller.dart';
 import 'package:capricorn/src/controllers/jlc_controller.dart';
 import 'package:capricorn/src/log/app_logger.dart';
-import 'package:capricorn/src/models/bom_item.dart';
 import 'package:capricorn/src/widgets/bom_cost_widget.dart';
 import 'package:capricorn/src/widgets/bom_table_widget.dart';
 import 'package:file_picker/file_picker.dart';
@@ -25,13 +24,11 @@ class FilePickerWidget extends StatefulWidget {
 class _FilePickerWidgetState extends State<FilePickerWidget> {
   final logger = AppLogger.getLogger();
 
-  final _scaffoldMessengerKey = GlobalKey<ScaffoldMessengerState>();
+  // final _scaffoldMessengerKey = GlobalKey<ScaffoldMessengerState>();
   List<PlatformFile>? pickedFiles;
 
   PlatformFile? chosenFile;
   String? lastDirectory;
-  String errorMessage = "";
-  // List<BomItem> bom = [];
   Widget dataTable = Container();
   AppState state = AppState.select;
   ErrorState error = ErrorState.none;
@@ -68,39 +65,41 @@ class _FilePickerWidgetState extends State<FilePickerWidget> {
           } else {
             state = AppState.select;
             error = ErrorState.error;
-            errorMessage = "Invalid file extension!";
             chosenFile = null;
+            showErrorMessage("Invalid file extension!");
           }
         } else {
           state = AppState.select;
           error = ErrorState.error;
-          errorMessage = "File extension not known!";
           chosenFile = null;
+          showErrorMessage("File extension not known!");
         }
         setState(() {});
       } else {
         state = AppState.select;
         error = ErrorState.warn;
-        errorMessage = "Selection Canceled!";
         chosenFile = null;
         logger.i("selection canceled");
+        showWarningMessage("Selection Canceled!");
         setState(() {});
       }
     } on PlatformException catch (e) {
+      logger.e("platform error: $e");
       state = AppState.select;
       error = ErrorState.fatal;
-      errorMessage = "Unsupported operation on platform!";
       chosenFile = null;
-      _logException('Unsupported operation: $e');
+      showErrorMessage("Unsupported operation on platform!");
     } catch (e) {
       state = AppState.select;
       error = ErrorState.fatal;
-      errorMessage = "Critical error within application: $e";
       chosenFile = null;
-      _logException(e.toString());
+      showErrorMessage("Critical error within application: $e");
     }
   }
 
+  ///
+  /// Resets the file indicator and controllers
+  ///
   void resetFile() {
     state = AppState.select;
     error = ErrorState.none;
@@ -109,13 +108,16 @@ class _FilePickerWidgetState extends State<FilePickerWidget> {
     setState(() {});
   }
 
+  ///
+  /// Processes selected file
+  ///
   void processFile() async {
     logger.t("BEGIN");
 
     if (chosenFile == null) {
       state = AppState.select;
       error = ErrorState.error;
-      errorMessage = "No file selected!";
+      showErrorMessage("No file selected!");
       logger.e("chosen file is null");
       return;
     }
@@ -132,17 +134,17 @@ class _FilePickerWidgetState extends State<FilePickerWidget> {
       csvController.reset();
       state = AppState.processing;
     });
+
     bool b = await csvController.parseCsv(chosenFile!);
     if (b) {
       b = await jlcController.getPrices(csvController.bom, setProgress);
       if (!b) {
         state = AppState.processed;
         error = ErrorState.error;
-        errorMessage = "Error getting prices.";
+        showErrorMessage("Error getting prices.");
       } else {
         state = AppState.processed;
         error = ErrorState.none;
-
         dataTable = BomTableWidget(bom: csvController.bom);
         // setState(() {});
       }
@@ -150,15 +152,15 @@ class _FilePickerWidgetState extends State<FilePickerWidget> {
       if (csvController.parsedHeader == false) {
         state = AppState.processed;
         error = ErrorState.error;
-        errorMessage = "Unable to parse header!";
+        showErrorMessage("Unable to parse header!");
       } else if (csvController.foundLcsc == false) {
         state = AppState.processed;
         error = ErrorState.error;
-        errorMessage = "Unable to find LCSC column in BOM!";
+        showErrorMessage("Unable to find LCSC column in BOM!");
       } else {
         state = AppState.processed;
         error = ErrorState.error;
-        errorMessage = "Unable to parse file!";
+        showErrorMessage("Unable to parse file!");
       }
     }
     setState(() {});
@@ -166,26 +168,42 @@ class _FilePickerWidgetState extends State<FilePickerWidget> {
     logger.t("END");
   }
 
-  void _logException(String message) {
-    logger.e(message);
+  ///
+  /// Exports file after processing
+  ///
+  void saveFile() async {
+    String name = chosenFile!.name;
+    int i = name.indexOf('.');
+    if (i != -1) {
+      name = "${name.substring(0, i)}-cost${name.substring(i)}";
+    }
 
-    printInDebug(message);
-    _scaffoldMessengerKey.currentState?.hideCurrentSnackBar();
-    _scaffoldMessengerKey.currentState?.showSnackBar(
-      SnackBar(
-        content: Text(
-          message,
-          style: const TextStyle(
-            color: Colors.white,
-          ),
-        ),
-      ),
+    String? outputFile = await FilePicker.platform.saveFile(
+      dialogTitle: 'Please select an output file:',
+      initialDirectory: chosenFile!.path,
+      fileName: name,
     );
+
+    if (outputFile != null) {
+      logger.d("file name: $outputFile");
+      CsvController controller = CsvController.instance();
+      bool b = controller.saveFile(outputFile);
+      if (b) {
+        error = ErrorState.info;
+        showInfoMessage("Exported File!");
+      }
+    } else {
+      logger.w("user canceled");
+      error = ErrorState.warn;
+      showWarningMessage("Canceled file selection!");
+    }
+    setState(() {});
   }
 
   @override
   Widget build(BuildContext context) {
     return Column(
+      // key: _scaffoldMessengerKey,
       mainAxisAlignment: MainAxisAlignment.start,
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
@@ -265,33 +283,6 @@ class _FilePickerWidgetState extends State<FilePickerWidget> {
                     ],
                   ),
                 ),
-                Visibility(
-                  visible: (error != ErrorState.none),
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(0, 10, 0, 10),
-                    child: Row(
-                      children: [
-                        Text(
-                          errorMessage,
-                          textAlign: TextAlign.start,
-                          style: TextStyle(
-                            color: (error == ErrorState.info)
-                                ? Colors.black
-                                : (error == ErrorState.warn)
-                                    ? Colors.amber.shade700
-                                    : Colors.red,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 20,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-
-                // const SizedBox(
-                //   height: 10.0,
-                // ),
               ],
             ),
           ),
@@ -315,9 +306,63 @@ class _FilePickerWidgetState extends State<FilePickerWidget> {
           visible: (state == AppState.processed),
           child: BomCostWidget(bom: CsvController.instance().bom),
         ),
+        Visibility(
+          visible: (state == AppState.processed),
+          child: SizedBox(
+            width: 125,
+            height: 50,
+            child: FloatingActionButton.extended(
+              onPressed: () => saveFile(),
+              label: Text("Export"),
+              icon: const Icon(Icons.upload),
+            ),
+          ),
+        ),
       ],
     );
   }
 
-  void printInDebug(Object object) => debugPrint(object.toString());
+  void showInfoMessage(String message) {
+    postMessage(
+      Text(
+        message,
+        style: TextStyle(
+          color: Colors.white,
+        ),
+      ),
+    );
+  }
+
+  void showWarningMessage(String message) {
+    postMessage(
+      Text(
+        message,
+        style: TextStyle(
+          color: Colors.orange.shade600,
+        ),
+      ),
+    );
+  }
+
+  void showErrorMessage(String message) {
+    postMessage(
+      Text(
+        message,
+        style: const TextStyle(
+          color: Colors.red,
+        ),
+      ),
+    );
+  }
+
+  void postMessage(Text text) {
+    logger.d(text.data);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: text,
+        duration: const Duration(seconds: 1),
+        backgroundColor: Colors.purple.shade900,
+      ),
+    );
+  }
 }

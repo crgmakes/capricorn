@@ -50,47 +50,17 @@ class BomDataSource extends DataTableSource {
           : (hasZebraStripes && index.isEven
               ? WidgetStateProperty.all(Theme.of(context).highlightColor)
               : null),
-      // onSelectChanged: (value) {
-      //   if (item.selected != value) {
-      //     _selectedCount += value! ? 1 : -1;
-      //     assert(_selectedCount >= 0);
-      //     item.selected = value;
-      //     notifyListeners();
-      //   }
-      // },
-      // onTap: hasRowTaps
-      //     ? () => _showSnackbar(context, 'Tapped on row ${item.name}')
-      //     : null,
-      // onDoubleTap: hasRowTaps
-      //     ? () => _showSnackbar(context, 'Double Tapped on row ${item.name}')
-      //     : null,
-      // onLongPress: hasRowTaps
-      //     ? () => _showSnackbar(context, 'Long pressed on row ${item.name}')
-      //     : null,
-      // onSecondaryTap: hasRowTaps
-      //     ? () => _showSnackbar(context, 'Right clicked on row ${item.name}')
-      //     : null,
-      // onSecondaryTapDown: hasRowTaps
-      //     ? (d) =>
-      //         _showSnackbar(context, 'Right button down on row ${item.name}')
-      //     : null,
-      // specificRowHeight:
-      //     hasRowHeightOverrides && item.fat >= 25 ? 100 : null,
-
-      // cols.add(DataColumn2(label: Text("Comment")));
-      // cols.add(DataColumn2(label: Text("LCSC")));
-      // cols.add(DataColumn2(label: Text("Quantity")));
-      // cols.add(DataColumn2(label: Text("Designator")));
-      // cols.add(DataColumn2(label: Text("Footprint")));
-
       cells: [
-        DataCell(Text(item.comment)),
-        DataCell(Text(item.lcsc)),
-        DataCell(Text(item.quantity.toString())),
-        DataCell(Text(item.cost.toStringAsFixed(4))),
-        DataCell(Text(item.extcost.toStringAsFixed(4))),
-        DataCell(Text(item.designator)),
-        // DataCell(Text(item.footprint)),
+        DataCell(SelectableText(item.category)),
+        DataCell(SelectableText(item.mn)),
+        DataCell(SelectableText(item.mpn)),
+        DataCell(SelectableText(item.description)),
+        DataCell(SelectableText(item.comment)),
+        DataCell(SelectableText(item.lcsc)),
+        DataCell(SelectableText(item.quantity.toString())),
+        DataCell(SelectableText(item.cost.toStringAsFixed(4))),
+        DataCell(SelectableText(item.extcost.toStringAsFixed(4))),
+        DataCell(SelectableText(item.designator)),
       ],
     );
   }

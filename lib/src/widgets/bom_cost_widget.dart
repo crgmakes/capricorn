@@ -2,7 +2,6 @@
 
 import 'package:capricorn/src/controllers/jlc_controller.dart';
 import 'package:capricorn/src/log/app_logger.dart';
-import 'package:capricorn/src/constants/app_styles.dart';
 import 'package:capricorn/src/models/bom_item.dart';
 import 'package:flutter/material.dart';
 

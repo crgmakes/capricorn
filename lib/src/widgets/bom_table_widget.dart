@@ -100,14 +100,34 @@ class _BomTableWidgetState extends State<BomTableWidget> {
             sortArrowIconColor: Colors.white,
             columns: [
               DataColumn2(
+                label: Text("Category"),
+                onSort: (columnIndex, ascending) =>
+                    _sort<String>((d) => d.category, columnIndex, ascending),
+              ),
+              DataColumn2(
+                label: Text("MN"),
+                onSort: (columnIndex, ascending) =>
+                    _sort<String>((d) => d.mn, columnIndex, ascending),
+              ),
+              DataColumn2(
+                label: Text("MPN"),
+                onSort: (columnIndex, ascending) =>
+                    _sort<String>((d) => d.mpn, columnIndex, ascending),
+              ),
+              DataColumn2(
                 label: Text("Description"),
+                onSort: (columnIndex, ascending) =>
+                    _sort<String>((d) => d.description, columnIndex, ascending),
+              ),
+              DataColumn2(
+                label: Text("Comment"),
                 onSort: (columnIndex, ascending) =>
                     _sort<String>((d) => d.comment, columnIndex, ascending),
               ),
               DataColumn2(
                 label: Text("LCSC"),
                 onSort: (columnIndex, ascending) =>
-                    _sort<String>((d) => d.comment, columnIndex, ascending),
+                    _sort<String>((d) => d.lcsc, columnIndex, ascending),
               ),
               DataColumn2(
                 label: Text("Quantity"),
@@ -129,11 +149,6 @@ class _BomTableWidgetState extends State<BomTableWidget> {
                 onSort: (columnIndex, ascending) =>
                     _sort<String>((d) => d.designator, columnIndex, ascending),
               ),
-              // DataColumn2(
-              //   label: Text("Footprint"),
-              //   onSort: (columnIndex, ascending) =>
-              //       _sort<String>((d) => d.footprint, columnIndex, ascending),
-              // ),
             ],
             rows: List<DataRow>.generate(
               bomData.rowCount,

@@ -3,7 +3,6 @@ import 'dart:convert';
 import 'package:collection/collection.dart';
 
 import 'attribute.dart';
-import 'image_list.dart';
 import 'price.dart';
 
 class JlcData {
@@ -15,6 +14,7 @@ class JlcData {
   final String componentNameEn;
   final String componentSpecificationEn;
   final String describe;
+  final String firstSortName;
   final List<Attribute> attributes;
   final int rohsFlag;
   final List<Price> prices;
@@ -31,6 +31,7 @@ class JlcData {
     this.componentNameEn,
     this.componentSpecificationEn,
     this.describe,
+    this.firstSortName,
     this.attributes,
     this.rohsFlag,
     this.prices,
@@ -53,6 +54,7 @@ class JlcData {
         data['componentNameEn'] as String,
         data['componentSpecificationEn'] as String,
         data['describe'] as String,
+        data['firstSortName'] as String,
         (data['attributes'] as List<dynamic>)
             .map((e) => Attribute.fromMap(e as Map<String, dynamic>))
             .toList(),
@@ -74,6 +76,7 @@ class JlcData {
         'componentNameEn': componentNameEn,
         'componentSpecificationEn': componentSpecificationEn,
         'describe': describe,
+        'firstSortName': firstSortName,
         'attributes': attributes.map((e) => e.toMap()).toList(),
         'rohsFlag': rohsFlag,
         'prices': prices.map((e) => e.toMap()).toList(),
@@ -111,6 +114,7 @@ class JlcData {
       componentNameEn.hashCode ^
       componentSpecificationEn.hashCode ^
       describe.hashCode ^
+      firstSortName.hashCode ^
       attributes.hashCode ^
       rohsFlag.hashCode ^
       prices.hashCode ^

@@ -139,4 +139,22 @@ class CsvController {
 
     return j;
   } // end parseRow
+
+  bool saveFile(String filepath) {
+    bool b = false;
+    List<List<dynamic>> l = [];
+    l.add(BomItem.toHeader());
+    for (int i = 0; i < bom.length; i++) {
+      l.add(bom[i].toList());
+    }
+
+    String s = ListToCsvConverter().convert(l);
+    final file = File(filepath).openWrite();
+    file.write(s);
+    b = true;
+
+    logger.i("wrote file $filepath");
+
+    return b;
+  }
 } // end class

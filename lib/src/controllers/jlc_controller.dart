@@ -1,5 +1,6 @@
 import 'package:capricorn/src/log/app_logger.dart';
 import 'package:capricorn/src/models/bom_item.dart';
+import 'package:capricorn/src/models/jlc_part_details/jlc_data.dart';
 import 'package:capricorn/src/models/jlc_part_details/jlc_part_details.dart';
 import 'package:capricorn/src/models/jlc_part_details/price.dart';
 import 'dart:convert';
@@ -44,45 +45,16 @@ class JlcController {
         lowQuantity = bi;
       }
       if (bi.lcsc.isNotEmpty) {
+        uniquePartCount++;
         try {
           final url = Uri.parse(baseUrl + bi.lcsc);
           final response = await http.get(url);
 
           if (response.statusCode == 200) {
-            JlcPartDetails details =
-                JlcPartDetails.fromJson(utf8.decode(response.bodyBytes));
-            bi.details = details;
-
-            //logger.t("Response body: ${response.body}");
-            // final decodedData = jsonDecode(response.body);
-            //logger.t('Decoded data: $decodedData');
-            // dynamic data = decodedData["data"];
-            // List<dynamic> prices = data["prices"];
-            List<Price> prices = details.data!.prices!;
-            for (int j = 0; j < prices.length; j++) {
-              if (prices[j].startNumber == 1) {
-                logger.d("description: ${details.data.describe}");
-                uniquePartCount++;
-                bi.cost = prices[j].productPrice!;
-                bi.extcost = bi.cost * bi.quantity;
-                totalCost += bi.extcost;
-                totalPartCount += bi.quantity;
-                if (bi.cost > highPrice.cost) {
-                  highPrice = bi;
-                }
-                if (bi.cost < lowPrice.cost) {
-                  lowPrice = bi;
-                }
-                if (bi.quantity > highQuantity.quantity) {
-                  highQuantity = bi;
-                }
-                if (bi.quantity < lowQuantity.quantity) {
-                  lowQuantity = bi;
-                }
-                logger.i("jlc price for ${bi.lcsc} = ${bi.cost}");
-                processed++;
-                break;
-              }
+            String s = utf8.decode(response.bodyBytes);
+            JlcPartDetails details = JlcPartDetails.fromJson(s);
+            if (parse(bi, details.data)) {
+              processed++;
             }
           } else {
             // Request failed with an error status code
@@ -100,6 +72,69 @@ class JlcController {
     if (processed == bom.length) {
       b = true;
     }
+    return b;
+  }
+
+  ///
+  /// Parse raw JLC data into object
+  ///
+  bool parse(BomItem bi, JlcData data) {
+    bool b = false;
+
+    if (bi.lcsc != data.componentCode) {
+      logger.e("data code '${data.componentCode}' <> bom code '${bi.lcsc}'");
+      return b;
+    }
+
+    bi.data = data;
+    bi.category = data.firstSortName;
+    bi.mn = data.componentBrandEn;
+    bi.mpn = data.componentModelEn;
+    bi.description = data.describe;
+    // comment taken from CSV file
+    // footprint taken from CSV file
+    bi.package = data.componentSpecificationEn;
+    // lcsc taken from CSV file
+    // quantity taken from CSV
+    // Compute unit cost
+    bi.unitCost = data.initialPrice;
+    bi.cost = 0;
+
+    // Build cost
+    List<Price> prices = data.prices;
+    if (prices.isNotEmpty) {
+      for (int i = 0; i < prices.length; i++) {
+        Price p = prices[i];
+        if (bi.quantity >= p.startNumber && bi.quantity <= p.endNumber) {
+          logger.t("quantity: ${bi.quantity} price[$i]: $p");
+          bi.cost = p.productPrice;
+          break;
+        }
+      }
+    }
+    if (bi.cost == 0) {
+      logger.e("unable to find price range for ${bi.quantity}");
+      bi.cost = bi.unitCost;
+    }
+    bi.extcost = bi.cost * bi.quantity;
+    totalCost += bi.extcost;
+    totalPartCount += bi.quantity;
+    if (bi.cost > highPrice.cost) {
+      highPrice = bi;
+    }
+    if (bi.cost < lowPrice.cost) {
+      lowPrice = bi;
+    }
+    if (bi.quantity > highQuantity.quantity) {
+      highQuantity = bi;
+    }
+    if (bi.quantity < lowQuantity.quantity) {
+      lowQuantity = bi;
+    }
+    logger.i("jlc price for ${bi.lcsc} = ${bi.cost}");
+
+    b = true;
+
     return b;
   }
 } // end class

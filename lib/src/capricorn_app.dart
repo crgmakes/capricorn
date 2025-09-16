@@ -23,7 +23,9 @@ class MyCustomScrollBehavior extends MaterialScrollBehavior {
 
 /// The Widget that configures your application.
 class CapricornApp extends StatelessWidget {
-  const CapricornApp({
+  //final _scaffoldMessengerKey = GlobalKey<ScaffoldMessengerState>();
+
+  CapricornApp({
     super.key,
     required this.settingsController,
   });
@@ -41,6 +43,7 @@ class CapricornApp extends StatelessWidget {
       builder: (BuildContext context, Widget? child) {
         return MaterialApp(
           scrollBehavior: MyCustomScrollBehavior(),
+          //key: _scaffoldMessengerKey,
 
           // Providing a restorationScopeId allows the Navigator built by the
           // MaterialApp to restore the navigation stack when a user leaves and
@@ -89,7 +92,7 @@ class CapricornApp extends StatelessWidget {
                     return const SampleItemDetailsView();
                   case SampleItemListView.routeName:
                   default:
-                    return const HomeScreen();
+                    return HomeScreen();
                 }
               },
             );
