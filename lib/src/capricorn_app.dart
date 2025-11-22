@@ -25,7 +25,7 @@ class MyCustomScrollBehavior extends MaterialScrollBehavior {
 class CapricornApp extends StatelessWidget {
   //final _scaffoldMessengerKey = GlobalKey<ScaffoldMessengerState>();
 
-  CapricornApp({
+  const CapricornApp({
     super.key,
     required this.settingsController,
   });

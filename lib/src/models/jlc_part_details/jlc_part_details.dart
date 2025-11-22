@@ -1,5 +1,7 @@
 import 'dart:convert';
 import 'jlc_data.dart';
+
+// ignore: depend_on_referenced_packages
 import 'package:collection/collection.dart';
 
 class JlcPartDetails {
